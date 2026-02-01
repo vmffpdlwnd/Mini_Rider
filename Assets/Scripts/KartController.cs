@@ -20,9 +20,12 @@ public class KartController : MonoBehaviour
     public WheelCollider rearRightWheel;
     
     [Header("Suspension")]
-    public float suspensionHeight = 0.2f;
-    public float suspensionSpring = 20000f;
-    public float suspensionDamper = 500f;
+    public float suspensionHeight = 0.1f;
+    public float suspensionSpring = 3000f;
+    public float suspensionDamper = 1500f;
+    
+    [Header("Stability")]
+    public float downforce = 100f;
     
     public LayerMask groundLayers = Physics.DefaultRaycastLayers;
     
@@ -38,7 +41,13 @@ public class KartController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         
         // Rigidbody 설정
+        rb.mass = 500f;
         rb.centerOfMass = new Vector3(0, -0.5f, 0);
+        rb.linearDamping = 0.05f;
+        rb.angularDamping = 0.5f;
+        
+        // Rigidbody 제약 조건 - X, Z축 회전 잠금 (뒤집힘 방지)
+        rb.constraints = RigidbodyConstraints.None;
         
         // WheelCollider 설정
         SetupWheels();
@@ -82,6 +91,12 @@ public class KartController : MonoBehaviour
     void FixedUpdate()
     {
         UpdateGroundedPercent();
+        
+        // 다운포스 적용
+        if (groundPercent > 0f)
+        {
+            rb.AddForce(-transform.up * downforce * rb.linearVelocity.magnitude);
+        }
         
         // 속도 계산
         Vector3 localVel = transform.InverseTransformVector(rb.linearVelocity);
@@ -150,7 +165,7 @@ public class KartController : MonoBehaviour
             ) * rb.linearVelocity;
         }
         
-        // 앞바퀴 조향
+        // 앞바퀴 조향각 설정
         if (frontLeftWheel) frontLeftWheel.steerAngle = turnInput * 30f;
         if (frontRightWheel) frontRightWheel.steerAngle = turnInput * 30f;
     }
